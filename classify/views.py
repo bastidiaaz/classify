@@ -1,10 +1,13 @@
 from django.shortcuts import render
 from django.core.files.storage import default_storage
+from django.http import JsonResponse
 from django.conf import settings
 from scipy.signal import resample
 from scipy.interpolate import interp1d
 import mne
 import numpy as np
+import json
+from django.views.decorators.csrf import csrf_exempt
 # from django.http import JsonResponse
 # from django.core.files.base import ContentFile
 # from django.conf import settings
@@ -17,6 +20,12 @@ import numpy as np
 # from keras.applications import vgg16
 # import datetime
 # import traceback
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 def ResampleLinear1D(original, targetLen):
     original = np.array(original, dtype=np.float)
@@ -31,6 +40,7 @@ def ResampleLinear1D(original, targetLen):
     assert(len(interp) == targetLen)
     return interp
 
+@csrf_exempt
 def index(request):
     if  request.method == "POST":
         # Save file
@@ -61,9 +71,9 @@ def index(request):
         for i in np.arange(n):
             eeg[i, :] = ResampleLinear1D(raw_data[i],largo)
 
-        print(eeg)
+        json_dump = json.dumps({'data': eeg}, cls=NumpyEncoder)
 
-        return render(request,'homepage.html')
+        return JsonResponse(json_dump, safe=False)
         # return render(request,'templates/homepage.html',response)
     else:
         return render(request,'homepage.html')

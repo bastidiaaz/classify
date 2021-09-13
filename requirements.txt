@@ -1,3 +1,5 @@
 tensorflow
 mne
 scipy
+djangorestframework
+django-cors-headers
